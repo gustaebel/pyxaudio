@@ -166,7 +166,17 @@ cdef class AlsaSink(_Sink):
 
         with nogil:
             ret = snd_pcm_writei(self.handle, buf, size)
+        if ret == size:
+            return
 
+        # Probably a buffer underrun, reset the device...
+        ret = snd_pcm_prepare(self.handle)
+        if ret < 0:
+            raise AlsaError("unable to prepare device (%s)" % snd_strerror(ret))
+
+        # ...and try again.
+        with nogil:
+            ret = snd_pcm_writei(self.handle, buf, size)
         if ret != size:
             raise AlsaError("write error (%s)" % snd_strerror(ret))
 
