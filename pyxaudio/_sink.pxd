@@ -1,6 +1,6 @@
 # -----------------------------------------------------------------------
 #
-# pyxaudio - Basic Cython bindings for FFmpeg and Pulseaudio
+# pyxaudio - Basic Cython bindings for FFmpeg, Pulseaudio and Alsa
 #
 # Copyright (C) 2014 Lars Gustäbel <lars@gustaebel.de>
 #
