@@ -32,7 +32,7 @@ cdef class _Sink:
         self.device = device    # device is unused in PulseSink
 
     def setup(self, config):
-        if config.channels == self.channels or config.rate == self.rate or config.format == self.format:
+        if config.channels == self.channels and config.rate == self.rate and config.format == self.format:
             return
 
         self.teardown()
