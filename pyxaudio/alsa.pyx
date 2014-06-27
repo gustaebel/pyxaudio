@@ -57,15 +57,9 @@ cdef class AlsaSink(_Sink):
         FORMAT_FLOAT:   SND_PCM_FORMAT_FLOAT_LE
     }
 
-    cdef unicode device_name
-
     #
     # Initialization.
     #
-    def __init__(self, unicode device_name=u"default", unicode name=None):
-        self.name = name # XXX AlsaSink.name is unused.
-        self.device_name = device_name
-
     def _setup(self, config):
         cdef int ret
         cdef int dir = 0
@@ -80,12 +74,12 @@ cdef class AlsaSink(_Sink):
         if self.format not in self.sample_formats:
             raise ValueError("unsupported sample format %r" % self.format)
 
-        bytes_device_name = encode(self.device_name)
+        bytes_device_name = encode(self.device)
 
         # Open the stream.
         ret = snd_pcm_open(&self.handle, bytes_device_name, SND_PCM_STREAM_PLAYBACK, 0)
         if ret < 0:
-            raise AlsaError("unable open device %s (%s)" % (self.device_name, snd_strerror(ret)))
+            raise AlsaError("unable open device %s (%s)" % (self.device, snd_strerror(ret)))
 
         ret = snd_pcm_hw_params_malloc(&self.params)
         if ret < 0:

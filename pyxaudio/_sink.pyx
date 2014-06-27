@@ -27,6 +27,10 @@ cdef class _Sink:
         self.closed = False
         self.configured = False
 
+    def __init__(self, unicode name=u"pyxaudio", unicode device=u"default"):
+        self.name = name        # name is unused in AlsaSink
+        self.device = device    # device is unused in PulseSink
+
     def setup(self, config):
         if config.channels == self.channels or config.rate == self.rate or config.format == self.format:
             return

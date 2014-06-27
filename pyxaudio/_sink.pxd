@@ -35,5 +35,5 @@ cdef class _Sink:
     cdef readonly unicode format
 
     cdef readonly unicode name
-
+    cdef readonly unicode device
 

@@ -59,9 +59,6 @@ cdef class PulseSink(_Sink):
     #
     # Initialization.
     #
-    def __init__(self, unicode name=u"pyxaudio"):
-        self.name = name
-
     def _setup(self, config):
         cdef int error
         cdef pa_sample_spec ss
