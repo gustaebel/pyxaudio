@@ -110,12 +110,15 @@ cdef class FFmpegSource:
         bytes_url = encode(url)
 
         # Open the stream.
-        ret = avformat_open_input(&self.ctx, bytes_url, NULL, NULL)
+        cdef char* bytes_url_ptr = bytes_url
+        with nogil:
+            ret = avformat_open_input(&self.ctx, bytes_url_ptr, NULL, NULL)
         if ret < 0:
             raise FFmpegError("unable to open url")
 
         # Read a few packets to get stream information.
-        ret = avformat_find_stream_info(self.ctx, NULL)
+        with nogil:
+            ret = avformat_find_stream_info(self.ctx, NULL)
         if ret < 0:
             raise FFmpegError("unable to read")
 

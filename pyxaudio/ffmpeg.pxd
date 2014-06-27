@@ -139,13 +139,13 @@ cdef extern from "libavformat/avformat.h":
     void av_register_all()
     int avformat_network_init()
 
-    int avformat_open_input(AVFormatContext**, const char*, AVInputFormat*, AVDictionary**)
+    int avformat_open_input(AVFormatContext**, const char*, AVInputFormat*, AVDictionary**) nogil
     void avformat_close_input(AVFormatContext**)
 
     int av_read_frame(AVFormatContext*, AVPacket*) nogil
     int av_seek_frame(AVFormatContext*, int, int64_t, int)
 
-    int avformat_find_stream_info(AVFormatContext*, AVDictionary**)
+    int avformat_find_stream_info(AVFormatContext*, AVDictionary**) nogil
     int av_find_best_stream(AVFormatContext*, AVMediaType, int, int, AVCodec**, int)
 
 cdef extern from "libswresample/swresample.h":
