@@ -100,21 +100,22 @@ cdef class FFmpegSource:
         self.eof = False
 
     def __dealloc__(self):
-        # FIXME is that all?
-        swr_free(&self.swrctx)
+        if self.ctx != NULL:
+            avformat_close_input(&self.ctx)
+        if self.swrctx != NULL:
+            swr_free(&self.swrctx)
 
     def __init__(self, unicode url, unicode sample_format=None):
-        # FIXME do proper clean up in case of errors
         cdef int ret
         cdef AVCodec *codec
+        cdef bytes encoded_url = encode(url)
+        cdef char *encoded_url_ptr = encoded_url
 
         self.url = url
-        bytes_url = encode(url)
 
         # Open the stream.
-        cdef char* bytes_url_ptr = bytes_url
         with nogil:
-            ret = avformat_open_input(&self.ctx, bytes_url_ptr, NULL, NULL)
+            ret = avformat_open_input(&self.ctx, encoded_url_ptr, NULL, NULL)
         if ret < 0:
             raise FFmpegError("unable to open url")
 
