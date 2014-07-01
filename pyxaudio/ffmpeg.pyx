@@ -65,6 +65,7 @@ cdef class FFmpegSource:
     cdef bytes data
     cdef bool eof
     cdef float time_base
+    cdef float packet_duration
 
     #
     # Public attributes.
@@ -218,6 +219,7 @@ cdef class FFmpegSource:
 
         # Update the stream position.
         self.position = float(packet.pts) * self.time_base
+        self.packet_duration = float(packet.duration) * self.time_base
 
         while packet.size > 0:
             # Decode the packet into the frame.
@@ -282,6 +284,11 @@ cdef class FFmpegSource:
         return data
 
     def seek(self, float position):
+        # XXX The seeking accuracy seems to differ considerably between
+        # different formats and files (~2s). In order to conduct an accurate
+        # seek, we seek a few frames before the actual timestamp and decode
+        # from there after the av_seek_frame() call. If there is a better way,
+        # I'd be happy to take advice.
         cdef int ret
         cdef int64_t timestamp
 
@@ -292,10 +299,16 @@ cdef class FFmpegSource:
             raise FFmpegError("stream is not seekable")
 
         if position < 0 or position > self.duration:
-            raise FFmpegError("invalid position argument")
+            raise FFmpegError("position argument out of range")
+
+        # Empty the output buffer.
+        self.data = b""
+
+        # One second should give us enough room.
+        self.position = max(0, position - 1)
 
         # Convert the position to the stream-specific time base.
-        timestamp = av_rescale_q(<int64_t>(position * AV_TIME_BASE),
+        timestamp = av_rescale_q(<int64_t>(self.position * AV_TIME_BASE),
                 AV_TIME_BASE_Q, self.stream.time_base)
 
         # Execute the seek request.
@@ -303,10 +316,10 @@ cdef class FFmpegSource:
         if ret != 0:
             raise FFmpegError("unable to seek")
 
-        # Force set the position attribute. This will be correct once the first
-        # new packet is decoded.
-        self.position = position
-        self.data = b""
+        # Decode packets up to the actual position.
+        while self.position + self.packet_duration < position:
+            self.data = b""
+            self._read_next_frame()
 
     def get_config(self):
         return self.channels, self.rate, self.format

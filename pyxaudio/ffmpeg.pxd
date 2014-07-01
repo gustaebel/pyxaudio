@@ -110,6 +110,7 @@ cdef extern from "libavcodec/avcodec.h":
         int size
         int stream_index
         int64_t pts
+        int duration
 
     void av_init_packet(AVPacket*)
     void av_free_packet(AVPacket*)
