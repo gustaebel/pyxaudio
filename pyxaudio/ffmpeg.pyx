@@ -67,12 +67,18 @@ cdef class FFmpegSource:
     cdef float packet_duration
 
     #
+    # Properties.
+    #
+    property closed:
+        def __get__(self):
+            return self.ctx == NULL
+
+    #
     # Public attributes.
     #
     cdef readonly unicode url
     cdef readonly dict tags
     cdef readonly bool seekable
-    cdef readonly bool closed
 
     cdef readonly unicode codec_name
     cdef readonly unicode codec_long_name
@@ -91,7 +97,6 @@ cdef class FFmpegSource:
         self.data = b""
         self.tags = {}
         self.seekable = False
-        self.closed = False
         self.eof = False
 
     def __dealloc__(self):
@@ -336,7 +341,6 @@ cdef class FFmpegSource:
     def close(self):
         if not self.closed:
             avformat_close_input(&self.ctx)
-            self.closed = True
 
     def __repr__(self):
         return "<%s %r>" % (self.__class__.__name__, self.url)
