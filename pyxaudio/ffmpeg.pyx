@@ -58,7 +58,6 @@ cdef class FFmpegSource:
     cdef AVCodecContext *avctx
     cdef SwrContext *swrctx
     cdef AVStream *stream
-    cdef AVFrame *frame
 
     cdef AVSampleFormat sample_fmt
     cdef int audio_stream
@@ -90,8 +89,6 @@ cdef class FFmpegSource:
     def __cinit__(self):
         # Initialize C structures and default attributes.
         self.data = b""
-        self.frame = av_frame_alloc()
-
         self.tags = {}
         self.seekable = False
         self.closed = False
@@ -100,7 +97,6 @@ cdef class FFmpegSource:
     def __dealloc__(self):
         # FIXME is that all?
         swr_free(&self.swrctx)
-        av_frame_free(&self.frame)
 
     def __init__(self, unicode url, unicode sample_format=None):
         # FIXME do proper clean up in case of errors
@@ -201,6 +197,7 @@ cdef class FFmpegSource:
     cdef void _read_next_frame(self):
         cdef int ret, length, got_frame
         cdef AVPacket packet
+        cdef AVFrame *frame = av_frame_alloc()
 
         # Initialize the packet structure.
         av_init_packet(&packet)
@@ -224,7 +221,7 @@ cdef class FFmpegSource:
         while packet.size > 0:
             # Decode the packet into the frame.
             with nogil:
-                length = avcodec_decode_audio4(self.avctx, self.frame, &got_frame, &packet)
+                length = avcodec_decode_audio4(self.avctx, frame, &got_frame, &packet)
             if length < 0:
                 # The packet could not be decoded, ignore this.
                 break
@@ -236,21 +233,22 @@ cdef class FFmpegSource:
             if got_frame:
                 # A complete frame was produced.
                 size = av_samples_get_buffer_size(NULL,
-                        self.avctx.channels, self.frame.nb_samples,
+                        self.avctx.channels, frame.nb_samples,
                         self.sample_fmt, 1)
 
                 if self.swrctx != NULL:
                     # Reorder planar audio data or convert to a different
                     # sample layout.
-                    self.data += self._convert(self.frame, size)
+                    self.data += self._convert(frame, size)
                 else:
-                    self.data += (<char*>self.frame.data[0])[:size]
+                    self.data += (<char*>frame.data[0])[:size]
 
             # Free the referenced data from the frame structure.
-            av_frame_unref(self.frame)
+            av_frame_unref(frame)
 
         if packet.data != NULL:
             av_free_packet(&packet)
+        av_frame_free(&frame)
 
     cdef bytes _convert(self, AVFrame *frame, int size):
         cdef int ret
