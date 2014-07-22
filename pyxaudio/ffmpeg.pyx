@@ -187,12 +187,18 @@ cdef class FFmpegSource:
         self.time_base = <float>self.stream.time_base.num / <float>self.stream.time_base.den
 
         # Collect metadata tags.
+        # FIXME 2014-07-22 Apparently, ffmpeg cannot extract metadata from
+        # ogg/vorbis files.
+        cdef unicode key, value
         cdef AVDictionaryEntry *tag = NULL
         while True:
             tag = av_dict_get(self.ctx.metadata, "", tag, AV_DICT_IGNORE_SUFFIX)
             if tag == NULL:
                 break
-            self.tags[self._decode(tag.key)] = self._decode(tag.value)
+            key = self._decode(tag.key).strip().lower()
+            value = self._decode(tag.value).strip()
+            if value:
+                self.tags[key] = value
 
     #
     # Private methods.
