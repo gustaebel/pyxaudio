@@ -10,5 +10,6 @@ setup(
     author="Lars Gustäbel",
     author_email="lars@gustaebel.de",
     packages=["pyxaudio"],
-    ext_modules=cythonize("pyxaudio/*.pyx")
+    ext_modules=cythonize("pyxaudio/*.pyx"),
+    scripts=["beep"]
 )
