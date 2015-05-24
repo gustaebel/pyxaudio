@@ -293,6 +293,13 @@ cdef class FFmpegSource:
         self.data = self.data[n:]
         return data
 
+    def __iter__(self):
+        while not self.eof:
+            self._read_next_frame()
+            if self.data:
+                yield self.data
+            self.data = b""
+
     def seek(self, float position):
         # XXX The seeking accuracy seems to differ considerably between
         # different formats and files (~2s). In order to conduct an accurate
