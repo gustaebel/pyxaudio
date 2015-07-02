@@ -45,13 +45,24 @@ class Beeper:
         sink.close()
 
 
+def period(s):
+    if s.endswith("h"):
+        return float(s[:-1]) * 3600
+    elif s.endswith("m"):
+        return float(s[:-1]) * 60
+    elif s.endswith("s") or s[-1].isdigit():
+        return float(s.rstrip("s"))
+    else:
+        raise ValueError
+
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("-w", "--wait", type=float, default=0, metavar="NUM",
-                      help="wait SEC seconds before beeping, default is %(default)s")
-    parser.add_argument("-i", "--interval", type=float, default=2, metavar="NUM",
-                      help="wait SEC seconds between two beeps, default is %(default)s")
+    parser.add_argument("-w", "--wait", type=period, default=0, metavar="NUM",
+                      help="wait NUM seconds before beeping, append `m` for minutes, `h` for hours,"
+                      " default is %(default)s")
+    parser.add_argument("-i", "--interval", type=period, default=2, metavar="NUM",
+                      help="wait NUM seconds between two beeps, default is %(default)s")
     parser.add_argument("-n", "--number", type=int, default=3, metavar="NUM",
                       help="beep NUM of times, default is %(default)s")
     parser.add_argument("-f", "--file", metavar="PATH",
