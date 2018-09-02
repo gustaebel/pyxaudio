@@ -70,7 +70,7 @@ cdef class PulseSink(_Sink):
         if self.format not in self.sample_formats:
             raise ValueError("unsupported sample format %r" % self.format)
 
-        bytes_name = encode(self.name)
+        bytes_name = encode(self.name or u"pyxaudio")
 
         if hasattr(config, "title"):
             bytes_stream_name = encode(config.title)

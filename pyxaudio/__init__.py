@@ -24,6 +24,7 @@
 from pyxaudio.ffmpeg import FFmpegSource
 from pyxaudio.pulse import PulseSink
 from pyxaudio.alsa import AlsaSink
+from pyxaudio.file import FileSink
 from pyxaudio._shared import SourceError, SinkError
 
 FORMAT_U8 = u"u8"
@@ -40,6 +41,7 @@ sources = {
 sinks = {
     "pulse":    PulseSink,
     "alsa":     AlsaSink,
+    "file":     FileSink,
     "default":  PulseSink
 }
 

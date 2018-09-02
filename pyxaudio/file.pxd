@@ -19,35 +19,3 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #
 # -----------------------------------------------------------------------
-
-
-cdef class _Sink:
-
-    def __cinit__(self):
-        self.closed = False
-        self.configured = False
-
-    def __init__(self, unicode name=None, unicode device=u"default"):
-        self.name = name        # name is unused in AlsaSink
-        self.device = device    # device is unused in PulseSink
-
-    def setup(self, config):
-        if config.channels == self.channels and config.rate == self.rate and config.format == self.format:
-            return
-
-        self.teardown()
-        self._setup(config)
-
-    def teardown(self):
-        if self.configured:
-            self._teardown()
-            self.configured = False
-
-    def __repr__(self):
-        if self.configured:
-            return "<%s channels=%r rate=%r format=%r>" % (self.__class__.__name__,
-                    self.channels, self.rate, self.format)
-        else:
-            return "<%s unconfigured>" % self.__class__.__name__
-
-

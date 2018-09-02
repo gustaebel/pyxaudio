@@ -16,7 +16,7 @@ class Beeper:
             self.rate = 44100
             self.format = pyxaudio.FORMAT_S16
 
-            self.sound = base64.decodestring(default_sound)
+            self.sound = base64.decodebytes(default_sound)
 
         else:
             if sys.version_info.major == 2:
