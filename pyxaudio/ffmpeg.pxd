@@ -96,6 +96,9 @@ cdef extern from "libavcodec/avcodec.h":
         int channels
         uint64_t channel_layout
 
+    struct AVCodecParameters:
+        AVCodecID codec_id
+
     struct AVFrame:
         uint8_t **data
         uint8_t **extended_data
@@ -112,11 +115,14 @@ cdef extern from "libavcodec/avcodec.h":
         int64_t pts
         int duration
 
-    void av_init_packet(AVPacket*)
-    void av_free_packet(AVPacket*)
+    AVPacket* av_packet_alloc()
+    void av_packet_unref(AVPacket*)
 
     AVCodec *avcodec_find_decoder(AVCodecID)
-    int avcodec_decode_audio4(AVCodecContext*, AVFrame*, int*, AVPacket*) nogil
+    AVCodecContext *avcodec_alloc_context3(AVCodec*)
+    void avcodec_parameters_to_context(AVCodecContext*, AVCodecParameters*)
+    int avcodec_receive_frame(AVCodecContext*, AVFrame*) nogil
+    int avcodec_send_packet(AVCodecContext*, AVPacket*) nogil
     int avcodec_open2(AVCodecContext*, AVCodec*, AVDictionary**)
 
 cdef extern from "libavformat/avio.h":
@@ -125,7 +131,7 @@ cdef extern from "libavformat/avio.h":
 
 cdef extern from "libavformat/avformat.h":
     struct AVStream:
-        AVCodecContext *codec
+        AVCodecParameters *codecpar
         AVRational time_base
 
     struct AVFormatContext:
@@ -137,7 +143,6 @@ cdef extern from "libavformat/avformat.h":
     struct AVInputFormat:
         pass
 
-    void av_register_all()
     int avformat_network_init()
 
     int avformat_open_input(AVFormatContext**, const char*, AVInputFormat*, AVDictionary**) nogil

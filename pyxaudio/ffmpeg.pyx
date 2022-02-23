@@ -133,8 +133,9 @@ cdef class FFmpegSource:
 
         # Start up the decoder.
         self.stream = self.ctx.streams[self.audio_stream]
-        self.avctx = self.stream.codec
-        codec = avcodec_find_decoder(self.avctx.codec_id)
+        codec = avcodec_find_decoder(self.stream.codecpar.codec_id)
+        self.avctx = avcodec_alloc_context3(codec)
+        avcodec_parameters_to_context(self.avctx, self.stream.codecpar)
         ret = avcodec_open2(self.avctx, codec, NULL)
         if ret < 0:
             raise FFmpegError("unable to open decoder")
@@ -208,16 +209,16 @@ cdef class FFmpegSource:
 
     cdef void _read_next_frame(self):
         cdef int ret, length, got_frame
-        cdef AVPacket packet
+        cdef AVPacket* packet
         cdef AVFrame *frame = av_frame_alloc()
 
         # Initialize the packet structure.
-        av_init_packet(&packet)
+        packet = av_packet_alloc()
 
         # Read only packets from the audio stream.
         while 1:
             with nogil:
-                ret = av_read_frame(self.ctx, &packet)
+                ret = av_read_frame(self.ctx, packet)
             if ret < 0:
                 # XXX av_free_packet necessary here?
                 self.eof = True
@@ -230,24 +231,18 @@ cdef class FFmpegSource:
         self.position = float(packet.pts) * self.time_base
         self.packet_duration = float(packet.duration) * self.time_base
 
-        while packet.size > 0:
-            # Decode the packet into the frame.
-            with nogil:
-                length = avcodec_decode_audio4(self.avctx, frame, &got_frame, &packet)
-            if length < 0:
-                # The packet could not be decoded, ignore this.
-                break
+        # Decode the packet into the frame.
+        with nogil:
+            got_frame = avcodec_receive_frame(self.avctx, frame) == 0
+            avcodec_send_packet(self.avctx, packet)
 
-            # Advance the packet data.
-            packet.data += length
-            packet.size -= length
+        if got_frame:
+            # A complete frame was produced.
+            size = av_samples_get_buffer_size(NULL,
+                    self.avctx.channels, frame.nb_samples,
+                    self.sample_fmt, 1)
 
-            if got_frame:
-                # A complete frame was produced.
-                size = av_samples_get_buffer_size(NULL,
-                        self.avctx.channels, frame.nb_samples,
-                        self.sample_fmt, 1)
-
+            if size >= 0:
                 if self.swrctx != NULL:
                     # Reorder planar audio data or convert to a different
                     # sample layout.
@@ -255,11 +250,11 @@ cdef class FFmpegSource:
                 else:
                     self.data += (<char*>frame.data[0])[:size]
 
-            # Free the referenced data from the frame structure.
-            av_frame_unref(frame)
+        # Free the referenced data from the frame structure.
+        av_frame_unref(frame)
 
         if packet.data != NULL:
-            av_free_packet(&packet)
+            av_packet_unref(packet)
         av_frame_free(&frame)
 
     cdef bytes _convert(self, AVFrame *frame, int size):
@@ -362,5 +357,4 @@ cdef class FFmpegSource:
 
 av_log_set_level(AV_LOG_QUIET)
 avformat_network_init()
-av_register_all()
 

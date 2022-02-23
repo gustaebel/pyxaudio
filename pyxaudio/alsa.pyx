@@ -153,7 +153,7 @@ cdef class AlsaSink(_Sink):
     def write(self, bytes data):
         cdef int ret
         cdef char *buf = data
-        cdef int size = len(data) / self.frame_size
+        cdef int size = len(data) // self.frame_size
 
         if self.closed:
             raise ValueError("I/O operation on closed file")
