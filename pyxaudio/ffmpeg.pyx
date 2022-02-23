@@ -233,7 +233,8 @@ cdef class FFmpegSource:
 
         # Decode the packet into the frame.
         with nogil:
-            got_frame = avcodec_receive_frame(self.avctx, frame) == 0
+            ret = avcodec_receive_frame(self.avctx, frame)
+            got_frame = ret == 0
             avcodec_send_packet(self.avctx, packet)
 
         if got_frame:
