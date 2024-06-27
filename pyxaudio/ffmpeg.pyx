@@ -107,7 +107,7 @@ cdef class FFmpegSource:
 
     def __init__(self, unicode url, unicode sample_format=None):
         cdef int ret
-        cdef AVCodec *codec
+        cdef const AVCodec *codec
         cdef bytes encoded_url = encode(url)
         cdef char *encoded_url_ptr = encoded_url
 
@@ -141,9 +141,9 @@ cdef class FFmpegSource:
             raise FFmpegError("unable to open decoder")
 
         # Guess the channel layout if it is unset.
-        if self.avctx.channel_layout == 0:
-            self.avctx.channel_layout = av_get_default_channel_layout(self.avctx.channels)
-            if self.avctx.channel_layout == 0:
+        if self.avctx.ch_layout.order == 0:
+            av_channel_layout_default(&self.avctx.ch_layout, self.avctx.ch_layout.nb_channels)
+            if self.avctx.ch_layout.order == 0:
                 raise FFmpegError("unable to guess channel layout")
 
         # Set up the resampler (e.g. to convert planar to packed audio).
@@ -160,12 +160,12 @@ cdef class FFmpegSource:
             self.sample_fmt = AV_SAMPLE_FMT_FLT
 
         if self.sample_fmt != self.avctx.sample_fmt:
-            self.swrctx = swr_alloc_set_opts(NULL,
-                    self.avctx.channel_layout, self.sample_fmt, self.avctx.sample_rate,
-                    self.avctx.channel_layout, self.avctx.sample_fmt, self.avctx.sample_rate,
+            ret = swr_alloc_set_opts2(&self.swrctx,
+                    &self.avctx.ch_layout, self.sample_fmt, self.avctx.sample_rate,
+                    &self.avctx.ch_layout, self.avctx.sample_fmt, self.avctx.sample_rate,
                     0, NULL)
 
-            if self.swrctx == NULL:
+            if ret < 0:
                 raise FFmpegError("unable to open resampler")
 
             ret = swr_init(self.swrctx)
@@ -174,7 +174,7 @@ cdef class FFmpegSource:
 
         # Gather audio information.
         self.rate = self.avctx.sample_rate
-        self.channels = self.avctx.channels
+        self.channels = self.avctx.ch_layout.nb_channels
         self.format = sample_formats[self.sample_fmt]
 
         # Gather decoder information.
@@ -240,7 +240,7 @@ cdef class FFmpegSource:
         if got_frame:
             # A complete frame was produced.
             size = av_samples_get_buffer_size(NULL,
-                    self.avctx.channels, frame.nb_samples,
+                    self.avctx.ch_layout.nb_channels, frame.nb_samples,
                     self.sample_fmt, 1)
 
             if size >= 0:

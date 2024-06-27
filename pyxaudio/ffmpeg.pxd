@@ -40,7 +40,7 @@ cdef extern from "libavutil/avutil.h":
 cdef extern from "libavutil/channel_layout.h":
     int AV_CH_LAYOUT_STEREO
 
-    int64_t av_get_default_channel_layout(int)
+    void av_channel_layout_default(AVChannelLayout*, int)
 
 cdef extern from "libavutil/dict.h":
     int AV_DICT_IGNORE_SUFFIX
@@ -80,6 +80,14 @@ cdef extern from "libavutil/samplefmt.h":
     int av_sample_fmt_is_planar(AVSampleFormat)
     AVSampleFormat av_get_packed_sample_fmt(AVSampleFormat)
 
+cdef extern from "libavutil/channel_layout.h":
+    struct AVChannelLayout:
+        AVChannelOrder order
+        int nb_channels
+
+    enum AVChannelOrder:
+        pass
+
 cdef extern from "libavcodec/avcodec.h":
     struct AVCodec:
         const char *name
@@ -94,7 +102,7 @@ cdef extern from "libavcodec/avcodec.h":
         AVSampleFormat sample_fmt
         int sample_rate
         int channels
-        uint64_t channel_layout
+        AVChannelLayout ch_layout
 
     struct AVCodecParameters:
         AVCodecID codec_id
@@ -105,7 +113,7 @@ cdef extern from "libavcodec/avcodec.h":
         int nb_samples
         int sample_rate
         int channels
-        uint64_t channel_layout
+        AVChannelLayout ch_layout
         int *linesize
 
     struct AVPacket:
@@ -118,7 +126,7 @@ cdef extern from "libavcodec/avcodec.h":
     AVPacket* av_packet_alloc()
     void av_packet_unref(AVPacket*)
 
-    AVCodec *avcodec_find_decoder(AVCodecID)
+    const AVCodec *avcodec_find_decoder(AVCodecID)
     AVCodecContext *avcodec_alloc_context3(AVCodec*)
     void avcodec_parameters_to_context(AVCodecContext*, AVCodecParameters*)
     int avcodec_receive_frame(AVCodecContext*, AVFrame*) nogil
@@ -159,7 +167,7 @@ cdef extern from "libswresample/swresample.h":
         pass
 
     void swr_free(SwrContext**)
-    SwrContext *swr_alloc_set_opts(SwrContext*, int64_t, AVSampleFormat, int, int64_t, AVSampleFormat, int, int, void*)
+    int swr_alloc_set_opts2(SwrContext**, AVChannelLayout*, AVSampleFormat, int, AVChannelLayout*, AVSampleFormat, int, int, void*)
     int swr_init(SwrContext*)
     int swr_convert(SwrContext*, uint8_t**, int, const uint8_t**, int) nogil
 
