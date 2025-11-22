@@ -2,8 +2,9 @@
 
 import sys
 import time
-import argparse
 import base64
+import argparse
+import subprocess
 
 import pyxaudio
 
@@ -67,16 +68,32 @@ def main():
                       help="beep NUM of times, default is %(default)s")
     parser.add_argument("-f", "--file", metavar="PATH",
                       help="play this sound file instead of the default one")
+    parser.add_argument("argv", nargs=argparse.REMAINDER,
+                      help="execute a command-line and beep when ready "\
+                           "(one beep for success, 3 beeps for failure)")
 
     args = parser.parse_args()
 
-    time.sleep(args.wait)
+    if not args.argv:
+        time.sleep(args.wait)
 
-    with Beeper(args.file) as beeper:
-        for i in range(args.number - 1):
+        with Beeper(args.file) as beeper:
+            for i in range(args.number - 1):
+                beeper.beep()
+                time.sleep(args.interval)
             beeper.beep()
-            time.sleep(args.interval)
-        beeper.beep()
+
+    else:
+        try:
+            subprocess.check_call(args.argv)
+        except subprocess.CalledProcessError:
+            beeps = 3
+        else:
+            beeps = 1
+
+        with Beeper(args.file) as beeper:
+            for i in range(beeps):
+                beeper.beep()
 
 
 default_sound = b"""\
