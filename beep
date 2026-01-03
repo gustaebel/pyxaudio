@@ -84,9 +84,11 @@ def main():
             beeper.beep()
 
     else:
+        returncode = 0
         try:
             subprocess.check_call(args.argv)
-        except subprocess.CalledProcessError:
+        except subprocess.CalledProcessError as exc:
+            returncode = exc.returncode
             beeps = 3
         else:
             beeps = 1
@@ -94,6 +96,8 @@ def main():
         with Beeper(args.file) as beeper:
             for i in range(beeps):
                 beeper.beep()
+
+        sys.exit(returncode)
 
 
 default_sound = b"""\
